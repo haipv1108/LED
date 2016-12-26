@@ -62,12 +62,6 @@ public class MainActivity extends AppCompatActivity{
     private List<NodeS> mDiscoveredResources;
     private List<GraphS> mGraphSes;
 
-    public interface VolleyCallback {
-        void lookupSuccess(String response);
-        void explodeSuccess(String root, String uri, int depth, float sim, String response);
-        void errorResponse(String error);
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -75,6 +69,8 @@ public class MainActivity extends AppCompatActivity{
 
         initUI();
         init();
+
+        explode("http://facebook.com", "http://dbpedia.org/resource/Berlin", 0, 0.0f);
 
         mEdtSearch.addTextChangedListener(new TextWatcher() {
             @Override
@@ -129,53 +125,17 @@ public class MainActivity extends AppCompatActivity{
                 Request.Method.GET, url, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
-                volleyCallback.lookupSuccess(response);
+                clearLookupResult();
+                parseXmlLookupResult(response);
             }
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                volleyCallback.errorResponse(error.getMessage());
+                showLog(error.getMessage());
             }
         });
         AppController.getInstance().addToRequestQueue(stringRequest);
     }
-
-    private final VolleyCallback volleyCallback = new VolleyCallback() {
-        @Override
-        public void lookupSuccess(String response) {
-            clearLookupResult();
-            parseXmlLookupResult(response);
-        }
-
-        @Override
-        public void explodeSuccess(String root, String uri, int depth, float sim, String response) {
-            List<String> relatedUris = new ArrayList<>();
-            try {
-                JSONObject jsonObject = new JSONObject(response);
-                JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");
-                if(data.length() == 0){
-                    showLogAndToast("No result");
-                }else{
-                    for(int i = 0; i < data.length(); i++){
-                        JSONObject element = data.getJSONObject(i);
-                        String uriResult = element.getJSONObject("hasValue").getString("value");
-                        relatedUris.add(uriResult);
-                    }
-                    for(String n : relatedUris){
-                        explore(root, n, depth - 1);
-                    }
-                    mGraphSes.add(new GraphS(root, uri, sim));
-                }
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-        }
-
-        @Override
-        public void errorResponse(String error) {
-            showLogAndToast(error);
-        }
-    };
 
     private void parseXmlLookupResult(String response){
         if(response == null) return;
@@ -301,23 +261,40 @@ public class MainActivity extends AppCompatActivity{
     }
 
     private void explode(final String root, final String uri, final int depth, final float sim){
-        if(uri == null){
-            return;
-        }
-
         String url = Utils.createUrlExplode(uri);
         StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
-                volleyCallback.explodeSuccess(root, uri, depth, sim, response);
+                List<String> relatedUris = new ArrayList<>();
+                try {
+                    JSONObject jsonObject = new JSONObject(response);
+                    JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");
+                    if(data.length() == 0){
+                        showLogAndToast("No result");
+                    }else{
+                        for(int i = 0; i < data.length(); i++){
+                            JSONObject element = data.getJSONObject(i);
+                            String uriResult = element.getJSONObject("hasValue").getString("value");
+                            relatedUris.add(uriResult);
+                        }
+
+                        for(String n : relatedUris){
+                            explore(root, n, depth - 1);
+                            showLogAndToast(n);
+                        }
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
             }
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                volleyCallback.errorResponse(error.getMessage());
+                showLog(error.getMessage());
             }
         });
         AppController.getInstance().addToRequestQueue(request);
+        mGraphSes.add(new GraphS(root, uri, sim));
     }
 
     /* ==========================================================================================*/
@@ -344,8 +321,24 @@ public class MainActivity extends AppCompatActivity{
     }
 
     private float engineS(String uri1, String uri2, String type){
-        //TODO:
+        switch (type){
+            case GOOGLE:
+
+                break;
+            case YAHOO:
+                break;
+            case BING:
+                break;
+            case DILICIOUS:
+                break;
+        }
+
+
         return 0.0f;
+    }
+
+    private void googleResults(String label){
+        //Customsearch customsearch =
     }
 
     /* ==========================================================================================*/

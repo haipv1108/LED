@@ -9,6 +9,7 @@ public class Config {
     public static final String BASE_URL_DBPEDIA = "http://dbpedia.org/sparql?default-graph-uri=&query=";
     public static final String RESULT_JSON_TYPE = "&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000";
     public static final String LOOKUP_DBPEDIA = "http://lookup.dbpedia.org/api/search/PrefixSearch?";
+    public static final String BASE_URL_GOOGLE = "http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q=";
 
     public static final String PREFIX_DBPEDIA =
             "PREFIX owl: <http://www.w3.org/2002/07/owl#>\n" +

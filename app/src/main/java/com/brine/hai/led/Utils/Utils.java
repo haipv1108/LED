@@ -33,9 +33,9 @@ public class Utils {
         String query = Config.PREFIX_DBPEDIA + " \n" +
                 "SELECT DISTINCT ?property ?hasValue ?isValueOf\n" +
                 "WHERE {\n" +
-                "{ " + uri + " ?property ?hasValue }\n" +
+                "{ <" + uri + "> ?property ?hasValue }\n" +
                 "UNION\n" +
-                "{ ?isValueOf ?property " + uri + " }\n" +
+                "{ ?isValueOf ?property <" + uri + "> }\n" +
                 "FILTER(isIRI(?hasValue) || isIRI(?isValueOf)).\n" +
                 "FILTER(?property = dcterms:subject || ?property = skos:broader)\n" +
                 "}";
