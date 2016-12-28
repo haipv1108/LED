@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -70,7 +71,7 @@ public class MainActivity extends AppCompatActivity{
         initUI();
         init();
 
-        explode("http://facebook.com", "http://dbpedia.org/resource/Berlin", 0, 0.0f);
+        abstractS("http://dbpedia.org/resource/Long_Live_Love_(Olivia_Newton-John_song)", "http://dbpedia.org/resource/Without_Your_Love_(André_song)");
 
         mEdtSearch.addTextChangedListener(new TextWatcher() {
             @Override
@@ -316,8 +317,52 @@ public class MainActivity extends AppCompatActivity{
     }
 
     private float abstractS(String uri1, String uri2){
-        //TODO:
+        String url = Utils.createUrlAbstractS(uri1, uri2);
+        StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                float abS = 0.0f;
+                try {
+                    JSONObject jsonObject = new JSONObject(response);
+                    JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");
+                    if(data.length() == 0){
+                        showLogAndToast("No result");
+                    }else{
+                        JSONObject element = data.getJSONObject(0);
+                        String label1 = element.getJSONObject("label1").getString("value");
+                        String abtract1 = element.getJSONObject("abtract1").getString("value");
+                        String label2 = element.getJSONObject("label2").getString("value");
+                        String abtract2 = element.getJSONObject("abtract2").getString("value");
+                        abS = calWordContained(label1, abtract2) + calWordContained(label2, abtract1);
+                        //TODO: abS
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                showLog(error.getMessage());
+            }
+        });
+        AppController.getInstance().addToRequestQueue(request);
         return 0.0f;
+    }
+
+    private float calWordContained(String label, String abtract){
+        if(label.length() == 0 || abtract.length() == 0){
+            return 0.0f;
+        }
+        List<String> words = Arrays.asList(label.split(" "));
+        int count = 0;
+        float length = words.size();
+        for(int i = 0; i < length; i++){
+            if(abtract.toLowerCase().contains(words.get(i).toLowerCase())){
+                count++;
+            }
+        }
+        return (count/length);
     }
 
     private float engineS(String uri1, String uri2, String type){

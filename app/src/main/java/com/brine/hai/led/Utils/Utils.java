@@ -43,6 +43,50 @@ public class Utils {
         return query;
     }
 
+    public static String createUrlAbstractS(String uri1, String uri2){
+        String query = createQueryAbstractS(uri1, uri2);
+        String url = "";
+        try {
+            url = Config.BASE_URL_DBPEDIA + URLEncoder.encode(query, "UTF-8") + Config.RESULT_JSON_TYPE;
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        showLog(url);
+        return url;
+    }
+
+    private static String createQueryAbstractS(String uri1, String uri2){
+        String query = Config.PREFIX_DBPEDIA + " \n" +
+                "prefix dbpedia-owl: <http://dbpedia.org/ontology/>\n" +
+                "\n" +
+                "\n" +
+                "select ?label1, ?label2, ?abtract1, ?abtract2 where\n" +
+                "{\n" +
+                "  {\n" +
+                "     select *\n" +
+                "     where{\n" +
+                "          <" + uri1 + "> rdfs:label ?label1 ;\n" +
+                "                         dbpedia-owl:abstract ?abtract1 .\n" +
+                "          FILTER langMatches(lang(?abtract1),'en') . \n" +
+                "          FILTER langMatches(lang(?label1),'en') .\n" +
+                "     }\n" +
+                "  }\n" +
+                "\n" +
+                "\n" +
+                "  {\n" +
+                "      select *\n" +
+                "      where{\n" +
+                "          <" + uri2 + "> rdfs:label ?label2 ;\n" +
+                "                         dbpedia-owl:abstract ?abtract2 .\n" +
+                "          FILTER langMatches(lang(?label2),'en') . \n" +
+                "          FILTER langMatches(lang(?abtract2),'en') .\n" +
+                "      }\n" +
+                "  }\n" +
+                "}";
+        showLog(query);
+        return query;
+    }
+
     private static void showLog(String message){
         Log.d(TAG, message);
     }
