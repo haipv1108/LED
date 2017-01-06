@@ -43,6 +43,25 @@ public class Utils {
         return query;
     }
 
+    public static String createUrlWikiS(String uri1, String uri2){
+        String query = createQueryWikiS(uri1, uri2);
+        String url = "";
+        try {
+            url = Config.BASE_URL_DBPEDIA + URLEncoder.encode(query, "UTF-8") + Config.RESULT_JSON_TYPE;
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        showLog(url);
+        return url;
+    }
+
+    private static String createQueryWikiS(String uri1, String uri2){
+        String query = "";
+        //TODO:
+        return query;
+    }
+
+
     public static String createUrlAbstractS(String uri1, String uri2){
         String query = createQueryAbstractS(uri1, uri2);
         String url = "";

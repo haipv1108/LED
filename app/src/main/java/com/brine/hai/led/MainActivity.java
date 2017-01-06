@@ -63,6 +63,11 @@ public class MainActivity extends AppCompatActivity{
     private List<NodeS> mDiscoveredResources;
     private List<GraphS> mGraphSes;
 
+    private interface CallBackSimilarity{
+        void onSuccess();
+        void onError();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -71,7 +76,7 @@ public class MainActivity extends AppCompatActivity{
         initUI();
         init();
 
-        abstractS("http://dbpedia.org/resource/Long_Live_Love_(Olivia_Newton-John_song)", "http://dbpedia.org/resource/Without_Your_Love_(André_song)");
+        test();
 
         mEdtSearch.addTextChangedListener(new TextWatcher() {
             @Override
@@ -103,6 +108,10 @@ public class MainActivity extends AppCompatActivity{
                 DBpediaRanker(mSeedURIs);
             }
         });
+    }
+
+    private void test(){
+
     }
 
     private void initUI(){
@@ -302,26 +311,53 @@ public class MainActivity extends AppCompatActivity{
         /* Algorithm 3: similarity(uri1, uri2). The main function implemented in Ranker. */
 
     private float similarity(String uri1, String uri2){
+        wikiS(uri1, uri2);
         float wikipediaS = wikiS(uri1, uri2);
-        float abstractS = abstractS(uri1, uri2);
+        //float abstractS = abstractS(uri1, uri2);
         float googleS = engineS(uri1, uri2, GOOGLE);
         float yahooS = engineS(uri1, uri2, YAHOO);
         float bingS = engineS(uri1, uri2, BING);
         float diliciousS = engineS(uri1, uri2, DILICIOUS);
-        return wikipediaS + abstractS + googleS + yahooS + bingS + diliciousS;
+        return wikipediaS + googleS + yahooS + bingS + diliciousS;
     }
 
-    private float wikiS(String uri1, String uri2){
-        //TODO:
+    CallBackSimilarity callBack = new CallBackSimilarity() {
+        @Override
+        public void onSuccess() {
+
+        }
+
+        @Override
+        public void onError() {
+
+        }
+    };
+
+    private float wikiS(final String uri1, final String uri2){
+        //TODO: create url
+        String urlWikiS = Utils.createUrlAbstractS(uri1, uri2);
+        StringRequest requestWikiS = new StringRequest(Request.Method.GET, urlWikiS, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                float wikiS = 0.0f;
+                abstractS(uri1, uri2, wikiS);
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                //TODO: xu ly loi
+            }
+        });
+        AppController.getInstance().addToRequestQueue(requestWikiS);
         return 0.0f;
     }
 
-    private float abstractS(String uri1, String uri2){
+    private float abstractS(String uri1, String uri2, final float wikiS){
         String url = Utils.createUrlAbstractS(uri1, uri2);
         StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
-                float abS = 0.0f;
+                float abtractS = 0.0f;
                 try {
                     JSONObject jsonObject = new JSONObject(response);
                     JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");
@@ -333,8 +369,8 @@ public class MainActivity extends AppCompatActivity{
                         String abtract1 = element.getJSONObject("abtract1").getString("value");
                         String label2 = element.getJSONObject("label2").getString("value");
                         String abtract2 = element.getJSONObject("abtract2").getString("value");
-                        abS = calWordContained(label1, abtract2) + calWordContained(label2, abtract1);
-                        //TODO: abS
+                        abtractS = calWordContained(label1, abtract2) + calWordContained(label2, abtract1) + wikiS;
+                        //TODO: abtractS
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -344,6 +380,7 @@ public class MainActivity extends AppCompatActivity{
             @Override
             public void onErrorResponse(VolleyError error) {
                 showLog(error.getMessage());
+                //TODO: xu ly loi
             }
         });
         AppController.getInstance().addToRequestQueue(request);
