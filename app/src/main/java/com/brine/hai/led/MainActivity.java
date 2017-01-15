@@ -28,8 +28,10 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.brine.hai.led.Adapter.FSAdapter;
 import com.brine.hai.led.Adapter.KeywordSearchAdapter;
+import com.brine.hai.led.Adapter.SLDAdapter;
 import com.brine.hai.led.DBpediaRanker.Model.GraphS;
 import com.brine.hai.led.DBpediaRanker.Model.KeywordSearch;
+import com.brine.hai.led.DBpediaRanker.Model.SLDResult;
 import com.brine.hai.led.DBpediaRanker.NodeS;
 import com.brine.hai.led.Model.FSResult;
 import com.brine.hai.led.Utils.DbpediaMusicConstant;
@@ -59,7 +61,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 public class MainActivity extends AppCompatActivity
-        implements View.OnClickListener, FSAdapter.FSCallBack{
+        implements View.OnClickListener, FSAdapter.FSCallBack, SLDAdapter.SLDCallBack{
 
     public static final String TAG = MainActivity.class.getCanonicalName();
 
@@ -77,17 +79,25 @@ public class MainActivity extends AppCompatActivity
     private EditText mEdtSearch;
     private ImageView mImgSearchOption, mImgSearch, mImgEXSearch;
     private ListView mKSListview;
-    private RecyclerView mRecyclerViewSearch;
+    private RecyclerView mRecyclerFS, mRecyclerSLD;
     private TagView mTagGroup;
 
-    private FSAdapter mFSAdapter;
+    /*-----Lookup uri-------*/
     private KeywordSearchAdapter mKSAdapter;
+    private List<KeywordSearch> mKeywordSearchs;
 
+    /*-----Facted search-----*/
+    private FSAdapter mFSAdapter;
     private List<FSResult> mFSResults;
+
+    /*-----Sliding window----*/
+    private List<SLDResult> mSLDResults;
+    private SLDAdapter mSLDAdapter;
+    private List<String> mEntities;
+
+    /*-----Dbpedia ranker-----*/
     private List<String> mSeedURIs;
     private List<String> mInputURIs;
-    private List<String> mEntities;
-    private List<KeywordSearch> mKeywordSearchs;
     private List<NodeS> mDiscoveredResources;
     private List<GraphS> mGraphSes;
 
@@ -114,7 +124,8 @@ public class MainActivity extends AppCompatActivity
         getSupportActionBar().hide();
         mEdtSearch = (EditText) findViewById(R.id.edt_search);
         mKSListview = (ListView) findViewById(R.id.lv_keyword_search);
-        mRecyclerViewSearch = (RecyclerView)findViewById(R.id.recycle_fsresult);
+        mRecyclerFS = (RecyclerView)findViewById(R.id.recycle_fsresult);
+        mRecyclerSLD = (RecyclerView) findViewById(R.id.recycle_sldresult);
         mImgSearchOption = (ImageView) findViewById(R.id.img_search_option);
         mImgSearch = (ImageView) findViewById(R.id.img_search);
         mImgEXSearch = (ImageView) findViewById(R.id.img_ex_search);
@@ -126,27 +137,45 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void init(){
+        /*------Look up uri---------*/
+        mKeywordSearchs = new ArrayList<>();
+        mKSAdapter = new KeywordSearchAdapter(this, mKeywordSearchs);
+        mKSListview.setAdapter(mKSAdapter);
+
+        /*------Facted search-------*/
+        mFSResults = new ArrayList<>();
+        mFSAdapter = new FSAdapter(getApplicationContext(), mFSResults, this);
+
+        mRecyclerFS.setHasFixedSize(true);
+        RecyclerView.LayoutManager layoutManagerFS =
+                new LinearLayoutManager(getApplicationContext(),
+                        LinearLayoutManager.VERTICAL, false);
+        mRecyclerFS.setLayoutManager(layoutManagerFS);
+        mRecyclerFS.addItemDecoration(
+                new DividerItemDecoration(getApplicationContext(), LinearLayout.VERTICAL));
+        mRecyclerFS.setItemAnimator(new DefaultItemAnimator());
+        mRecyclerFS.setAdapter(mFSAdapter);
+
+        /*------Sliding window-------*/
+        mSLDResults = new ArrayList<>();
+        mEntities = new ArrayList<>();
+        mSLDAdapter = new SLDAdapter(this, mSLDResults, this);
+
+        mRecyclerSLD.setHasFixedSize(true);
+        RecyclerView.LayoutManager layoutManagerSLD =
+                new LinearLayoutManager(getApplicationContext(),
+                        LinearLayoutManager.VERTICAL, false);
+        mRecyclerSLD.setLayoutManager(layoutManagerSLD);
+        mRecyclerSLD.addItemDecoration(
+                new DividerItemDecoration(getApplicationContext(), LinearLayout.VERTICAL));
+        mRecyclerSLD.setItemAnimator(new DefaultItemAnimator());
+        mRecyclerSLD.setAdapter(mSLDAdapter);
+
+        /*-------DBpedia ranker------*/
         mDiscoveredResources = new ArrayList<>();
         mInputURIs = new ArrayList<>();
         mSeedURIs = new ArrayList<>();
-        mEntities = new ArrayList<>();
-        mKeywordSearchs = new ArrayList<>();
         mGraphSes = new ArrayList<>();
-        mFSResults = new ArrayList<>();
-
-        /*------Facted search-------*/
-        mKSAdapter = new KeywordSearchAdapter(this, mKeywordSearchs);
-        mKSListview.setAdapter(mKSAdapter);
-        mFSAdapter = new FSAdapter(getApplicationContext(), mFSResults, this);
-
-        mRecyclerViewSearch.setHasFixedSize(true);
-        RecyclerView.LayoutManager layoutManager =
-                new LinearLayoutManager(getApplicationContext(), LinearLayoutManager.VERTICAL, false);
-        mRecyclerViewSearch.setLayoutManager(layoutManager);
-        mRecyclerViewSearch.addItemDecoration(
-                new DividerItemDecoration(getApplicationContext(), LinearLayout.VERTICAL));
-        mRecyclerViewSearch.setItemAnimator(new DefaultItemAnimator());
-        mRecyclerViewSearch.setAdapter(mFSAdapter);
     }
 
     private TypeSearchCallBack callBack = new TypeSearchCallBack() {
@@ -155,16 +184,18 @@ public class MainActivity extends AppCompatActivity
             resetSearch();
             switch (typeSearch){
                 case LOOKUP_URI:
-                    mRecyclerViewSearch.setVisibility(View.GONE);
                     mKSListview.setVisibility(View.VISIBLE);
+                    mRecyclerFS.setVisibility(View.GONE);
                     listeningEdtSearch();
                     break;
                 case FACTED_SEARCH:
-                    mRecyclerViewSearch.setVisibility(View.VISIBLE);
+                    mRecyclerFS.setVisibility(View.VISIBLE);
+                    mRecyclerSLD.setVisibility(View.GONE);
                     mKSListview.setVisibility(View.GONE);
                     break;
                 case SLIDING_WINDOW:
-                    mRecyclerViewSearch.setVisibility(View.VISIBLE);
+                    mRecyclerSLD.setVisibility(View.VISIBLE);
+                    mRecyclerFS.setVisibility(View.GONE);
                     mKSListview.setVisibility(View.GONE);
                     break;
                 default:
@@ -432,13 +463,13 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void showDetailsUri(String uri) {
+    public void showDetailsUriFS(String uri) {
         showLogAndToast(uri);
         //TODO: show details uri
     }
 
     @Override
-    public void addSearchExploratory(String label, String uri) {
+    public void addSearchExploratoryFS(String label, String uri) {
         addTagGroup(label, uri);
     }
 
@@ -447,8 +478,8 @@ public class MainActivity extends AppCompatActivity
     private void slidingWindow(String keyword){
         List<String> splitKeywords = splitPhaseKeywordSLD(keyword);
         findEntityKeywordSLD(keyword);
-        searchAccuracyEntities(splitKeywords);
-//        searchReleatedEntities(splitKeywords);
+//        searchAccuracyEntities(splitKeywords);
+        searchReleatedEntities(splitKeywords);
     }
 
     private List<String> splitPhaseKeywordSLD(String keyword){
@@ -570,6 +601,8 @@ public class MainActivity extends AppCompatActivity
                                 String label = element.getJSONObject("label").getString("value");
                                 String abtract = element.getJSONObject("abtract").getString("value");
                                 showLog("RELEATED: uri: " + uri + "--- label: " + label);
+                                SLDResult sldResult = new SLDResult(uri, label, abtract);
+                                updateSLDResult(sldResult);
                             }
                         }
                     } catch (JSONException e) {
@@ -587,6 +620,21 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void searchExpandEntities(){
+
+    }
+
+    private void updateSLDResult(SLDResult sldResult){
+        mSLDResults.add(sldResult);
+        mSLDAdapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public void showDetailsUriSLD(String uri) {
+
+    }
+
+    @Override
+    public void addSearchExploratorySLD(String label, String uri) {
 
     }
 

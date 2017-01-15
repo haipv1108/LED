@@ -27,8 +27,8 @@ public class FSAdapter extends RecyclerView.Adapter<FSAdapter.ViewHolder> {
     private FSCallBack mCallBack;
 
     public interface FSCallBack{
-        void showDetailsUri(String uri);
-        void addSearchExploratory(String label, String uri);
+        void showDetailsUriFS(String uri);
+        void addSearchExploratoryFS(String label, String uri);
     }
 
     public FSAdapter(Context context, List<FSResult> searchResults, FSCallBack callBack){
@@ -68,10 +68,10 @@ public class FSAdapter extends RecyclerView.Adapter<FSAdapter.ViewHolder> {
             public boolean onMenuItemClick(MenuItem item) {
                 switch (item.getItemId()){
                     case R.id.menu_details:
-                        mCallBack.showDetailsUri(result.getUri());
+                        mCallBack.showDetailsUriFS(result.getUri());
                         return true;
                     case R.id.menu_add_search:
-                        mCallBack.addSearchExploratory(result.getLabel(), result.getUri());
+                        mCallBack.addSearchExploratoryFS(result.getLabel(), result.getUri());
                         return true;
                 }
                 return false;
@@ -85,13 +85,13 @@ public class FSAdapter extends RecyclerView.Adapter<FSAdapter.ViewHolder> {
         return mSearchResults.size();
     }
 
-    public class ViewHolder extends RecyclerView.ViewHolder{
-        public TextView tvUri;
-        public TextView tvLabel;
-        public TextView tvDescription;
-        public TextView tvScore;
-        public TextView tvRank;
-        public TextView tvOptions;
+    class ViewHolder extends RecyclerView.ViewHolder{
+        TextView tvUri;
+        TextView tvLabel;
+        TextView tvDescription;
+        TextView tvScore;
+        TextView tvRank;
+        TextView tvOptions;
 
         public ViewHolder(View view){
             super(view);
