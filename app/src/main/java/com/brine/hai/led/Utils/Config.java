@@ -24,5 +24,6 @@ public class Config {
                     "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>\n" +
                     "PREFIX dbpedia-owl: <http://dbpedia.org/ontology/>\n" +
                     "PREFIX dbpprop: <http://www.w3.org/2006/03/wn/wn20/instances/synset-movie-noun-1>\n" +
-                    "PREFIX dcterms: <http://purl.org/dc/terms/>";
+                    "PREFIX dcterms: <http://purl.org/dc/terms/>\n" +
+                    "PREFIX dbpres: <http://dbpedia.org/resource/>";
 }

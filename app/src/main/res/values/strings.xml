@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">LED</string>
+
+    <string name="menu_lookup_uri">Lookup uri</string>
+    <string name="menu_facted_search">Facted search</string>
+    <string name="menu_sliding_window">Sliding window</string>
+
+    <string name="tv_score">Score: </string>
+    <string name="tv_rank">Rank: </string>
+    <string name="tv_option">⋮</string>
 </resources>

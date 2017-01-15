@@ -1,4 +1,4 @@
-package com.brine.hai.led.DBpediaRanker.Adapter;
+package com.brine.hai.led.Adapter;
 
 import android.content.Context;
 import android.view.LayoutInflater;
