@@ -288,7 +288,7 @@ public class MainActivity extends AppCompatActivity
                 }else{
                     mSeedURIs.addAll(mInputURIs);
                     showLogAndToast(mSeedURIs.toString());
-                    //TODO: DBpediaRanker(mSeedURIs);
+                    DBpediaRanker(mSeedURIs);
                 }
                 break;
         }
@@ -696,10 +696,9 @@ public class MainActivity extends AppCompatActivity
     /* ==========================================================================================*/
             /* Algorithm 2: explore(). The main function implemented in Graph Explorer. */
 
-    private void explore(String root, String uri, int depth){
-        float sim = 0.0f;
-
+    private void explore(final String root, String uri, final int depth){
         if(depth < MAX_DEPTH){
+            float sim = 0.0f;
             NodeS nodeS = searchUriInR(uri);
             if(nodeS != null){
                 nodeS.setHits(nodeS.getHits() + 1);
@@ -716,10 +715,43 @@ public class MainActivity extends AppCompatActivity
                     node.setInContext(false);
                 }
             }
+            mGraphSes.add(new GraphS(root, uri, sim));
         }
 
         if(depth > 0){
-            explode(root, uri, depth, sim);
+            String url = Utils.createUrlExplode(uri);
+            StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+                @Override
+                public void onResponse(String response) {
+                    List<String> relatedUris = new ArrayList<>();
+                    try {
+                        JSONObject jsonObject = new JSONObject(response);
+                        JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");
+                        if(data.length() == 0){
+                            showLog("No result");
+                        }else{
+                            for(int i = 0; i < data.length(); i++){
+                                JSONObject element = data.getJSONObject(i);
+                                String uriResult = element.getJSONObject("hasValue").getString("value");
+                                relatedUris.add(uriResult);
+                            }
+
+                            for(String n : relatedUris){
+                                explore(root, n, depth - 1);
+                                showLog(n);
+                            }
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }, new Response.ErrorListener() {
+                @Override
+                public void onErrorResponse(VolleyError error) {
+                    showLog(error.getMessage());
+                }
+            });
+            AppController.getInstance().addToRequestQueue(request, "explode");
         }
     }
 
@@ -732,56 +764,19 @@ public class MainActivity extends AppCompatActivity
         return null;
     }
 
-    private void explode(final String root, final String uri, final int depth, final float sim){
-        String url = Utils.createUrlExplode(uri);
-        StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
-                List<String> relatedUris = new ArrayList<>();
-                try {
-                    JSONObject jsonObject = new JSONObject(response);
-                    JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");
-                    if(data.length() == 0){
-                        showLogAndToast("No result");
-                    }else{
-                        for(int i = 0; i < data.length(); i++){
-                            JSONObject element = data.getJSONObject(i);
-                            String uriResult = element.getJSONObject("hasValue").getString("value");
-                            relatedUris.add(uriResult);
-                        }
-
-                        for(String n : relatedUris){
-                            explore(root, n, depth - 1);
-                            showLog(n);
-                        }
-                    }
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                showLog(error.getMessage());
-            }
-        });
-        AppController.getInstance().addToRequestQueue(request, "explode");
-        mGraphSes.add(new GraphS(root, uri, sim));
-    }
-
     /* ==========================================================================================*/
         /* Algorithm 3: similarity(uri1, uri2). The main function implemented in Ranker. */
 
     private float similarity(String uri1, String uri2){
         //float wikipediaS = wikiS(uri1, uri2);
         //float abstractS = abstractS(uri1, uri2);
-        float googleS = engineS(uri1, uri2, GOOGLE);
-        float yahooS = engineS(uri1, uri2, YAHOO);
-        float bingS = engineS(uri1, uri2, BING);
-        float diliciousS = engineS(uri1, uri2, DILICIOUS);
+//        float googleS = engineS(uri1, uri2, GOOGLE);
+//        float yahooS = engineS(uri1, uri2, YAHOO);
+//        float bingS = engineS(uri1, uri2, BING);
+//        float diliciousS = engineS(uri1, uri2, DILICIOUS);
         //showLog("SIMILARITY: " + total);
         //return wikipediaS + abstractS + googleS + yahooS + bingS + diliciousS;
-        return 0.0f;
+        return 7.0f;
     }
 
     private void wikiS(final String uri1, final String uri2){
@@ -905,13 +900,13 @@ public class MainActivity extends AppCompatActivity
 
     private List<String> getContext(){
         List<String> contexts = new ArrayList<>();
-        contexts.add("dbpres:PHP");
-        contexts.add("dbpres:Java_(Programming_language)");
-        contexts.add("dbpres:MySQL");
-        contexts.add("dbpres:Oracle_Database");
-        contexts.add("dbpres:Lisp_(Programming_language)");
-        contexts.add("dbpres:C_Sharp_(Programming_language)");
-        contexts.add("dbpres:SQLite");
+        contexts.add("http://dbpedia.org/resource/PHP");
+        contexts.add("http://dbpedia.org/resource/Java_(Programming_language)");
+        contexts.add("http://dbpedia.org/resource/MySQL");
+        contexts.add("http://dbpedia.org/resource/Oracle_Database");
+        contexts.add("http://dbpedia.org/resource/Lisp_(Programming_language)");
+        contexts.add("http://dbpedia.org/resource/C_Sharp_(Programming_language)");
+        contexts.add("http://dbpedia.org/resource/SQLite");
         return contexts;
     }
 

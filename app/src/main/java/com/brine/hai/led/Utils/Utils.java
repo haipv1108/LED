@@ -194,7 +194,7 @@ public class Utils {
                 "FILTER(isIRI(?hasValue) || isIRI(?isValueOf)).\n" +
                 "FILTER(?property = dcterms:subject || ?property = skos:broader)\n" +
                 "} LIMIT 10";
-        showLog(query);
+        showLog("createQueryExplode:\n" + query);
         return query;
     }
 
