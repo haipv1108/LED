@@ -2,8 +2,6 @@ package com.brine.hai.led.Utils;
 
 import android.util.Log;
 
-import com.android.volley.toolbox.StringRequest;
-
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Arrays;
@@ -33,7 +31,6 @@ public class Utils {
     }
 
     private static String createQueryFacetedSearch(String keyword, String optionSearch){
-        List<String> listWord = Arrays.asList(keyword.split(" "));
         String bifVectorParams = getBifVectorParams(keyword);
         String bifContainParams = getBifContainParams(keyword);
 
@@ -106,7 +103,7 @@ public class Utils {
                         "SELECT *\n" +
                         "WHERE{\n" +
                         "  {?s a dbpedia-owl:Song ;\n" +
-                        "      rdfs:label \"" + keyword + "\" . \n" +
+                        "      rdfs:label \"" + keyword + "@en\" . \n" +
                         "  }\n" +
                         "UNION{\n" +
                         "   ?s dbpedia2:name <" + uri + "> .\n" +

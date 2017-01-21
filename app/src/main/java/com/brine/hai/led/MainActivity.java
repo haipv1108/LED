@@ -34,6 +34,7 @@ import com.brine.hai.led.DBpediaRanker.Model.KeywordSearch;
 import com.brine.hai.led.DBpediaRanker.Model.SLDResult;
 import com.brine.hai.led.DBpediaRanker.NodeS;
 import com.brine.hai.led.Model.FSResult;
+import com.brine.hai.led.Utils.Config;
 import com.brine.hai.led.Utils.DbpediaMusicConstant;
 import com.brine.hai.led.Utils.Utils;
 import com.cunoraz.tagview.Tag;
@@ -186,17 +187,18 @@ public class MainActivity extends AppCompatActivity
                 case LOOKUP_URI:
                     mKSListview.setVisibility(View.VISIBLE);
                     mRecyclerFS.setVisibility(View.GONE);
+                    mRecyclerSLD.setVisibility(View.GONE);
                     listeningEdtSearch();
                     break;
                 case FACTED_SEARCH:
+                    mKSListview.setVisibility(View.GONE);
                     mRecyclerFS.setVisibility(View.VISIBLE);
                     mRecyclerSLD.setVisibility(View.GONE);
-                    mKSListview.setVisibility(View.GONE);
                     break;
                 case SLIDING_WINDOW:
-                    mRecyclerSLD.setVisibility(View.VISIBLE);
-                    mRecyclerFS.setVisibility(View.GONE);
                     mKSListview.setVisibility(View.GONE);
+                    mRecyclerFS.setVisibility(View.GONE);
+                    mRecyclerSLD.setVisibility(View.VISIBLE);
                     break;
                 default:
                     break;
@@ -235,7 +237,6 @@ public class MainActivity extends AppCompatActivity
         mKSListview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                clearData();
                 addTagGroup(mKeywordSearchs.get(i).getLabel(), mKeywordSearchs.get(i).getUri());
                 clearLookupResult();
                 mEdtSearch.setText("");
@@ -268,14 +269,12 @@ public class MainActivity extends AppCompatActivity
     public void onClick(View view) {
         switch (view.getId()){
             case R.id.img_search:
-                if(typeSearch == FACTED_SEARCH || typeSearch == SLIDING_WINDOW){
-                    String keywords = getKeywordInput();
-                    if(keywords != null){
-                        if(typeSearch == FACTED_SEARCH){
-                            facetedSearch(keywords, "");
-                        }else {
-                            slidingWindow(keywords);
-                        }
+                String keywords = getKeywordInput();
+                if(keywords != null){
+                    if(typeSearch == FACTED_SEARCH){
+                        facetedSearch(keywords, "");
+                    }else {
+                        slidingWindow(keywords);
                     }
                 }
                 break;
@@ -283,6 +282,7 @@ public class MainActivity extends AppCompatActivity
                 showPopupSearchOption();
                 break;
             case R.id.img_ex_search:
+                clearData();
                 if(mInputURIs.isEmpty()){
                     showLogAndToast("Please choice input uri");
                 }else{
@@ -473,13 +473,14 @@ public class MainActivity extends AppCompatActivity
         addTagGroup(label, uri);
     }
 
-    /*----------------------------------------------------------*/
     /*=======================SLIDING WINDOW=====================*/
     private void slidingWindow(String keyword){
+        mSLDResults.clear();
+        mSLDAdapter.notifyDataSetChanged();
         List<String> splitKeywords = splitPhaseKeywordSLD(keyword);
         findEntityKeywordSLD(keyword);
-//        searchAccuracyEntities(splitKeywords);
-        searchReleatedEntities(splitKeywords);
+        searchAccuracyEntities(splitKeywords);
+//        searchReleatedEntities(splitKeywords);
     }
 
     private List<String> splitPhaseKeywordSLD(String keyword){
@@ -491,13 +492,22 @@ public class MainActivity extends AppCompatActivity
                 String pharse = listWord.get(i) + " " +
                         listWord.get(i + 1) + " " + listWord.get(i + 2);
                 phaseKeywords.add(pharse);
-            }else if(i + 1 < lengthKeyword){
+            }
+            if(i + 1 < lengthKeyword){
                 String pharse = listWord.get(i) + " " + listWord.get(i + 1);
                 phaseKeywords.add(pharse);
+            }
+            if(!isStopWord(listWord.get(i))){
+                phaseKeywords.add(listWord.get(i));
             }
         }
         showLog("Phase Keyword: " + phaseKeywords.toString());
         return phaseKeywords;
+    }
+
+    private boolean isStopWord(String word){
+        List<String> listStopWord = Arrays.asList(Config.STOP_WORD);
+        return listStopWord.contains(word);
     }
 
     private void findEntityKeywordSLD(String keyword){
@@ -520,6 +530,7 @@ public class MainActivity extends AppCompatActivity
                 }
             }
         }
+        showLog("mentities: " + mEntities.toString());
     }
 
     private boolean checkOneWord(String entityLabel, List<String> listWord){
@@ -551,7 +562,6 @@ public class MainActivity extends AppCompatActivity
                     new Response.Listener<String>() {
                 @Override
                 public void onResponse(String response) {
-                    List<String> relatedUris = new ArrayList<>();
                     try {
                         JSONObject jsonObject = new JSONObject(response);
                         JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");
@@ -563,7 +573,8 @@ public class MainActivity extends AppCompatActivity
                                 String uri = element.getJSONObject("s").getString("value");
                                 String label = element.getJSONObject("label").getString("value");
                                 String abtract = element.getJSONObject("abtract").getString("value");
-                                //TODO:
+                                SLDResult sldResult = new SLDResult(uri, label, abtract);
+                                updateSLDResult(sldResult);
                                 showLog("ACCURACY uri: " + uri + "---label: " + label);
                             }
                         }
@@ -588,7 +599,6 @@ public class MainActivity extends AppCompatActivity
                     new Response.Listener<String>() {
                 @Override
                 public void onResponse(String response) {
-                    List<String> relatedUris = new ArrayList<>();
                     try {
                         JSONObject jsonObject = new JSONObject(response);
                         JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");
@@ -620,7 +630,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void searchExpandEntities(){
-
+        showLogAndToast(mEntities.toString());
     }
 
     private void updateSLDResult(SLDResult sldResult){
@@ -658,16 +668,16 @@ public class MainActivity extends AppCompatActivity
         boolean finished = false;
         while (!finished){
             for(NodeS nodeS : mDiscoveredResources){
-                if(nodeS.isIn_context() && !nodeS.isRanked()){
+                if(nodeS.isInContext() && !nodeS.isRanked()){
                     nodeS.setRanked(true);
                     explore(nodeS.getUri(), nodeS.getUri(), MAX_DEPTH);
                 }
             }
             finished = true;
             for(NodeS nodeS : mDiscoveredResources){
-                if(!nodeS.isIn_context()){
+                if(!nodeS.isInContext()){
                     if(is_in_context(nodeS.getUri())){
-                        nodeS.setIn_context(true);
+                        nodeS.setInContext(true);
                         finished = false;
                     }
                 }
@@ -697,13 +707,13 @@ public class MainActivity extends AppCompatActivity
                     sim = similarity(root, uri);
                 }
             }else{
-                NodeS node = new NodeS(uri, 1, false);
+                NodeS node = new NodeS(uri, 1, false, false);
                 mDiscoveredResources.add(node);
                 if(is_in_context(uri)){
                     sim = similarity(root, uri);
-                    node.setIn_context(true);
+                    node.setInContext(true);
                 }else{
-                    node.setIn_context(false);
+                    node.setInContext(false);
                 }
             }
         }
@@ -742,7 +752,7 @@ public class MainActivity extends AppCompatActivity
 
                         for(String n : relatedUris){
                             explore(root, n, depth - 1);
-                            showLogAndToast(n);
+                            showLog(n);
                         }
                     }
                 } catch (JSONException e) {
