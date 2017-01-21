@@ -8,7 +8,7 @@ public class NodeS {
     private String uri;
     private int hits;
     private boolean ranked;
-    private boolean in_context;
+    private boolean inContext;
 
     public NodeS(String uri, int hits, boolean ranked){
         this.uri = uri;
@@ -16,11 +16,11 @@ public class NodeS {
         this.ranked = ranked;
     }
 
-    public NodeS(String uri, int hits, boolean ranked, boolean in_context){
+    public NodeS(String uri, int hits, boolean ranked, boolean inContext){
         this.uri = uri;
         this.hits = hits;
         this.ranked = ranked;
-        this.in_context = in_context;
+        this.inContext = inContext;
     }
 
     public String getUri(){
@@ -48,19 +48,19 @@ public class NodeS {
         this.ranked = ranked;
     }
 
-    public boolean isIn_context(){
-        return in_context;
+    public boolean isInContext(){
+        return inContext;
     }
 
-    public void setIn_context(boolean in_context){
-        this.in_context = in_context;
+    public void setInContext(boolean inContext){
+        this.inContext = inContext;
     }
 
     public boolean equals(NodeS obj) {
         if(this.uri.equals(obj.getUri()) &&
                 this.hits == obj.getHits() &&
                 this.ranked == obj.isRanked() &&
-                this.in_context == obj.isIn_context())
+                this.inContext == obj.isInContext())
             return true;
         return false;
     }
